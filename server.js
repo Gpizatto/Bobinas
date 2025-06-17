@@ -19,9 +19,12 @@ connectDB();
 // Importando rotas
 const bobinasRoutes = require('./routes/bobinas');
 const movimentacoesRoutes = require('./routes/movimentacoes');
+const bobinasOrigemRoutes = require('./routes/bobinasOrigem');
+
 
 app.use('/bobinas', bobinasRoutes);
 app.use('/movimentacoes', movimentacoesRoutes);
+app.use('/bobinas-origem', bobinasOrigemRoutes);
 
 // Rota base
 app.get('/', (req, res) => {
