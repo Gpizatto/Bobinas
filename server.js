@@ -1,10 +1,15 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
+// Inicializando o app
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
+
+// Middlewares
 app.use(cors());
+app.use(express.json());
 
 // Conexão com o MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI, {
@@ -12,23 +17,21 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true,
 })
 .then(() => console.log('✅ Conectado ao MongoDB Atlas'))
-.catch((error) => console.error('❌ Erro ao conectar no MongoDB:', error));
+.catch((error) => console.error('❌ Erro ao conectar ao MongoDB:', error));
 
-// Modelo de exemplo
-const Bobina = mongoose.model('Bobina', {
-  nome: String,
-  largura: Number,
-  metragem: Number,
+// Importando rotas
+const bobinasRoutes = require('./routes/bobinas');
+const movimentacoesRoutes = require('./routes/movimentacoes');
+
+app.use('/bobinas', bobinasRoutes);
+app.use('/movimentacoes', movimentacoesRoutes);
+
+// Rota base
+app.get('/', (req, res) => {
+  res.send('API Controle de Bobinas Online ✅');
 });
 
-// Rotas de teste
-app.get('/bobinas', async (req, res) => {
-  const bobinas = await Bobina.find();
-  res.json(bobinas);
-});
-
-// Porta para o Render
-const PORT = process.env.PORT || 3000;
+// Iniciando o servidor
 app.listen(PORT, () => {
   console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
