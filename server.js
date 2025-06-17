@@ -20,11 +20,12 @@ connectDB();
 const bobinasRoutes = require('./routes/bobinas');
 const movimentacoesRoutes = require('./routes/movimentacoes');
 const bobinasOrigemRoutes = require('./routes/bobinasOrigem');
-
+const folhasRoutes = require('./routes/folhas');
 
 app.use('/bobinas', bobinasRoutes);
 app.use('/movimentacoes', movimentacoesRoutes);
 app.use('/bobinas-origem', bobinasOrigemRoutes);
+app.use('/folhas', folhasRoutes);
 
 // Rota base
 app.get('/', (req, res) => {
