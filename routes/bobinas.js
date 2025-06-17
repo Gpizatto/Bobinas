@@ -2,7 +2,17 @@ const express = require('express');
 const router = express.Router();
 const Bobina = require('../models/Bobina');
 
-// GET todas as bobinas
+// ✅ GET todas as bobinas
+router.get('/', async (req, res) => {
+  try {
+    const bobinas = await Bobina.find();
+    res.json(bobinas);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ POST criar nova bobina
 router.post('/', async (req, res) => {
   try {
     // Garante que sempre terá um codigoQR
@@ -18,18 +28,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST criar nova bobina
-router.post('/', async (req, res) => {
-  try {
-    const novaBobina = new Bobina(req.body);
-    await novaBobina.save();
-    res.status(201).json(novaBobina);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// GET bobina por ID
+// ✅ GET bobina por ID
 router.get('/:id', async (req, res) => {
   try {
     const bobina = await Bobina.findById(req.params.id);
@@ -40,7 +39,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT atualizar bobina
+// ✅ PUT atualizar bobina
 router.put('/:id', async (req, res) => {
   try {
     const bobina = await Bobina.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -51,7 +50,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE bobina
+// ✅ DELETE bobina
 router.delete('/:id', async (req, res) => {
   try {
     const result = await Bobina.findByIdAndDelete(req.params.id);
