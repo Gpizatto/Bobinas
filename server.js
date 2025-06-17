@@ -12,12 +12,9 @@ app.use(cors());
 app.use(express.json());
 
 // Conexão com o MongoDB Atlas
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ Conectado ao MongoDB Atlas'))
-.catch((error) => console.error('❌ Erro ao conectar ao MongoDB:', error));
+const connectDB = require('./config/db');
+connectDB();
+
 
 // Importando rotas
 const bobinasRoutes = require('./routes/bobinas');
