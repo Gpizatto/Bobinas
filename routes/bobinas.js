@@ -3,12 +3,18 @@ const router = express.Router();
 const Bobina = require('../models/Bobina');
 
 // GET todas as bobinas
-router.get('/', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const bobinas = await Bobina.find();
-    res.json(bobinas);
+    // Garante que sempre terá um codigoQR
+    if (!req.body.codigoQR || req.body.codigoQR.trim() === "") {
+      req.body.codigoQR = `BOBINA-${Date.now()}`;
+    }
+
+    const novaBobina = new Bobina(req.body);
+    await novaBobina.save();
+    res.status(201).json(novaBobina);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
