@@ -29,13 +29,6 @@ This is a complete system for managing the stock and movement of paper rolls, de
 
 > ⚠️ The backend API used is hosted at:  
 > `https://bobinas.onrender.com`
-
-## 📸 System Screenshots
-
-| Register | Inventory | QR Code Modal |
-|----------|-----------|----------------|
-| ![](./screenshots/cadastro.png) | ![](./screenshots/estoque.png) | ![](./screenshots/modal.png) |
-
 ## 📦 How to Run
 
 ### Frontend (locally)
@@ -76,4 +69,4 @@ The system can be extended with JWT authentication or route protection middlewar
 
 ✍️ Author
 Developed by Gustavo Pizatto
-📧 Contact: gustavopizatto.dev@gmail.com
+📧 Contact: gustavopizatto@hotmail.com
