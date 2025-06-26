@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Controle de Estoque - Bobinas de Papel</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style></style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>Controle de Estoque - Bobinas de Papel</h1>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="tabs no-print">
+        <div class="tab active" onclick="openTab('cadastro')">Cadastro</div>
+        <div class="tab" onclick="openTab('estoque')">Estoque</div>
+        <div class="tab" onclick="openTab('movimentacao')">Movimentação</div>
+        <div class="tab" onclick="openTab('relatorios')">Relatórios</div>
+      </div>
+
+      <div id="cadastro" class="tab-content active">
+        <div class="table-responsive">
+          <div class="card">
+            <h2>Cadastrar Nova Bobina</h2>
+            <form id="formBobina">
+              <div class="form-group">
+                <label for="tipoPapel">Tipo de Papel:</label>
+                <select id="tipoPapel" required>
+                  <option value="">Selecione...</option>
+                  <option value="Papel barreira gordura">
+                    Papel barreira gordura
+                  </option>
+                  <option value="Kraft Natural">Kraft Natural</option>
+                  <option value="Kraft Monolúcido">Kraft Monolúcido</option>
+                  <option value="Kraft Branco">Kraft Branco</option>
+                  <option value="BOPP Metalizado">BOPP Metalizado</option>
+                  <option value="BOPP Branco">BOPP Branco</option>
+                  <option value="Glassine">Glassine</option>
+                  <option value="Seda">Seda</option>
+                  <option value="Monolúcido">Monolúcido</option>
+                  <option value="Glasspel">Glasspel</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="fabricante">Fabricante:</label>
+                <input type="text" id="fabricante" required />
+              </div>
+
+              <div class="form-group">
+                <label for="peso">Peso (kg):</label>
+                <input type="number" id="peso" step="0.01" min="0" required />
+              </div>
+
+              <div class="form-group">
+                <label for="largura">Largura (cm):</label>
+                <input type="number" id="largura" step="0.1" min="0" required />
+              </div>
+
+              <div class="form-group">
+                <label for="gramatura">Gramatura (g/m²):</label>
+                <input type="number" id="gramatura" step="1" min="0" required />
+              </div>
+
+              <div class="form-group">
+                <label for="fornecedor">Fornecedor:</label>
+                <input type="text" id="fornecedor" required />
+              </div>
+
+              <div class="form-group">
+                <label for="localizacao">Localização:</label>
+                <input
+                  type="text"
+                  id="localizacao"
+                  value="Armazém Principal"
+                  required
+                />
+              </div>
+
+              <button type="submit">Cadastrar Bobina</button>
+              <button
+                type="button"
+                id="cancelarEdicao"
+                class="btn-danger"
+                style="display: none; margin-left: 10px"
+              >
+                Cancelar Edição
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div id="estoque" class="tab-content">
+        <div class="card">
+          <h2>Estoque Atual</h2>
+          <div class="form-group no-print">
+            <label for="filtro">Filtrar:</label>
+            <input
+              type="text"
+              id="filtro"
+              placeholder="Digite para filtrar..."
+            />
+          </div>
+          <div class="table-responsive">
+            <table id="tabelaEstoque">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tipo</th>
+                  <th>Fabricante</th>
+                  <th>Peso (kg)</th>
+                  <th>Largura</th>
+                  <th>Gramatura</th>
+                  <th>Status</th>
+                  <th class="no-print">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="corpoTabelaEstoque">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="movimentacao" class="tab-content">
+        <div class="card">
+          <h2>Histórico de Movimentação</h2>
+          <div class="table-responsive">
+            <table id="tabelaHistorico">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th>
+                  <th>Bobina</th>
+                  <th>Tipo</th>
+                  <th>Peso (kg)</th>
+                  <th>Usuário</th>
+                  <th>Perda (kg)</th>
+                  <th>Observações</th>
+                </tr>
+              </thead>
+              <tbody id="corpoTabelaHistorico">
+                <!-- Dados serão inseridos via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="relatorios" class="tab-content">
+        <div class="card">
+          <h2>Relatórios</h2>
+          <div class="form-group">
+            <label for="tipoRelatorio">Tipo de Relatório:</label>
+            <select id="tipoRelatorio">
+              <option value="estoqueAtual">Estoque Atual</option>
+              <option value="movimentacaoPeriodo">
+                Movimentação por Período
+              </option>
+              <option value="estoqueMinimo">Alertas de Estoque Mínimo</option>
+            </select>
+          </div>
+
+          <div id="filtroPeriodo" class="form-group" style="display: none">
+            <label for="dataInicio">Data Início:</label>
+            <input type="date" id="dataInicio" />
+
+            <label for="dataFim">Data Fim:</label>
+            <input type="date" id="dataFim" />
+          </div>
+
+          <button onclick="gerarRelatorio()">Gerar Relatório</button>
+
+          <div
+            id="resultadoRelatorio"
+            class="card"
+            style="margin-top: 20px; display: none"
+          >
+            <h3>Resultado do Relatório</h3>
+            <div class="table-responsive">
+              <div id="conteudoRelatorio"></div>
+              <button
+                class="no-print"
+                onclick="window.print()"
+                style="margin-top: 10px"
+              >
+                Imprimir Relatório
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal para visualização/edição -->
+    <div id="modalBobina" class="modal">
+      <div class="modal-content tabela-grande">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <h2 id="modalTitulo">Detalhes da Bobina</h2>
+        <div id="modalConteudo">
+          <!-- Conteúdo será inserido via JavaScript -->
+        </div>
+        <div class="qr-code-container" id="qrCodeContainer">
+          <!-- QR Code será gerado aqui -->
+        </div>
+        <button class="no-print" onclick="imprimirEtiqueta()">
+          Imprimir Etiqueta
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal para saída de estoque -->
+    <div id="modalSaida" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <h2>Registrar Saída de Estoque</h2>
+        <form id="formSaida">
+          <input type="hidden" id="idBobinaSaida" />
+
+          <div class="form-group">
+            <label for="tipoMaquina">Tipo de Máquina:</label>
+            <select id="tipoMaquina" required>
+              <option value="">Selecione...</option>
+              <option value="Rebobinadeira">Rebobinadeira</option>
+              <option value="Desenroladeira">Desenroladeira</option>
+              <option value="Impressora flexo">Impressora flexo</option>
+              <option value="Impressora laminadora">
+                Impressora laminadora
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="pesoSaida">Peso da Bobina (kg):</label>
+            <input type="number" id="pesoSaida" step="0.01" min="0" required />
+          </div>
+
+          <div class="form-group">
+            <label for="usuarioSaida">Usuário:</label>
+            <input type="text" id="usuarioSaida" required />
+          </div>
+
+          <div class="form-group">
+            <label for="observacaoSaida">Observações:</label>
+            <input type="text" id="observacaoSaida" />
+          </div>
+
+          <button type="submit">Registrar Saída</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal para retorno ao estoque -->
+    <div id="modalRetorno" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <h2>Registrar Retorno ao Estoque</h2>
+        <form id="formRetorno">
+          <input type="hidden" id="idBobinaRetorno" />
+          <input type="hidden" id="idMovimentoRetorno" />
+          <input type="hidden" id="tipoMaquinaRetorno" />
+
+          <div class="form-group">
+            <label for="pesoRestante"
+              >Peso Restante da Bobina Original (kg):</label
+            >
+            <input
+              type="number"
+              id="pesoRestante"
+              step="0.01"
+              min="0"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="pesoUtilizado">Peso Utilizado (kg):</label>
+            <input
+              type="number"
+              id="pesoUtilizado"
+              step="0.01"
+              min="0"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="pesoPerda">Perda (kg):</label>
+            <input type="number" id="pesoPerda" step="0.01" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label for="novaLargura">Nova Largura (cm):</label>
+            <input type="number" id="novaLargura" step="0.1" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label for="novaGramatura">Nova Gramatura (g/m²):</label>
+            <input type="number" id="novaGramatura" step="1" min="0" />
+          </div>
+
+          <div class="tipo-retorno-container" id="tipoRetornoContainer">
+            <h4>Tipo de Retorno:</h4>
+            <div class="tipo-retorno-option">
+              <input
+                type="radio"
+                id="retornoBobinas"
+                name="tipoRetorno"
+                value="bobinas"
+                checked
+              />
+              <label for="retornoBobinas">Bobinas</label>
+            </div>
+            <div class="tipo-retorno-option">
+              <input
+                type="radio"
+                id="retornoFolhas"
+                name="tipoRetorno"
+                value="folhas"
+              />
+              <label for="retornoFolhas">Folhas</label>
+            </div>
+            <div class="tipo-retorno-option">
+              <input
+                type="radio"
+                id="retornoAmbos"
+                name="tipoRetorno"
+                value="ambos"
+              />
+              <label for="retornoAmbos">Bobinas e Folhas</label>
+            </div>
+          </div>
+
+          <!-- Campos para Bobinas -->
+          <div id="bobinasContainer">
+            <div class="form-group">
+              <label for="quantidadeBobinas"
+                >Quantidade de Bobinas Geradas:</label
+              >
+              <input type="number" id="quantidadeBobinas" min="0" value="0" />
+            </div>
+
+            <div id="bobinasGeradasContainer" style="display: none">
+              <h4>Bobinas Geradas</h4>
+              <div id="bobinasGeradas"></div>
+            </div>
+          </div>
+
+          <!-- Campos para Folhas -->
+          <div id="folhasContainer" style="display: none">
+            <div class="form-group">
+              <label for="quantidadeFolhas"
+                >Quantidade de Folhas Geradas:</label
+              >
+              <input type="number" id="quantidadeFolhas" min="0" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label for="formatoFolhas">Formato das Folhas:</label>
+              <input type="text" id="formatoFolhas" />
+            </div>
+
+            <div class="form-group">
+              <label for="clienteFolhas">Cliente:</label>
+              <input type="text" id="clienteFolhas" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="observacaoRetorno">Observações:</label>
+            <input type="text" id="observacaoRetorno" />
+          </div>
+
+          <button type="submit">Registrar Retorno</button>
+        </form>
+      </div>
+    </div>
+    <div id="etiqueta" style="display: none">
+      <h2>Etiqueta de Bobina</h2>
+      <p><strong>Código:</strong> <span id="etiquetaCodigo"></span></p>
+      <p>
+        <strong>Tipo de Papel:</strong> <span id="etiquetaTipoPapel"></span>
+      </p>
+      <p><strong>Fabricante:</strong> <span id="etiquetaFabricante"></span></p>
+      <p><strong>Peso:</strong> <span id="etiquetaPeso"></span> kg</p>
+      <p><strong>Largura:</strong> <span id="etiquetaLargura"></span> cm</p>
+      <p>
+        <strong>Gramatura:</strong> <span id="etiquetaGramatura"></span> g/m²
+      </p>
+      <p><strong>Máquina:</strong> <span id="etiquetaMaquina"></span></p>
+      <p><strong>Usuário:</strong> <span id="etiquetaUsuario"></span></p>
+      <p><strong>Data:</strong> <span id="etiquetaData"></span></p>
+    </div>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
