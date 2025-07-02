@@ -1,1 +1,0 @@
-// Rotas de CRUD para Bobinas
