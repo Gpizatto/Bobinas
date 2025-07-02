@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/16c232ec-f944-45e8-8957-ae6eb812ec5a)
+![image](https://github.com/user-attachments/assets/afddbc6e-4874-42e2-86d4-ad991db0a4ad)
 
 📦 Sistema de Gestão de Estoque – Bobinas de Papel
 Este é um sistema completo para gerenciamento do estoque e movimentação de bobinas de papel, desenvolvido com foco em usabilidade e praticidade para as indústrias de impressão e embalagens.
