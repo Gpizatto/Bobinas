@@ -1,61 +1,48 @@
+ # 📦 Inventory Management - Paper Rolls
 
+This is a complete system for managing the stock and movement of paper rolls, developed with usability and practicality in mind for printing and packaging industries.
 
-📦 Sistema de Gestão de Estoque – Bobinas de Papel
-Este é um sistema completo para gerenciamento do estoque e movimentação de bobinas de papel, desenvolvido com foco em usabilidade e praticidade para as indústrias de impressão e embalagens.
+## ✅ Features
 
-✅ Funcionalidades
-Cadastro de bobinas com campos como tipo de papel, peso, gramatura, fabricante e mais.
+- Registration of paper rolls with fields such as paper type, weight, grammage, manufacturer, and more.
+- Control of entries, outputs, and returns of rolls.
+- Generation of derived rolls and sheets.
+- Full movement history tracking.
+- Modal views with QR Code display.
+- Printable roll labels.
+- Filtering, tabs, and intuitive interface.
+- Automated reports by period and current inventory.
 
-Controle de entradas, saídas e retornos de bobinas.
+## 🧠 Technologies Used
 
-Geração de bobinas e folhas derivadas.
+### Frontend
+- HTML5 + CSS3
+- Vanilla JavaScript
+- JSBarcode and QRCode.js (for code generation)
+- Responsive and print-ready layout
 
-Histórico completo de movimentações.
+### Backend (example)
+- Node.js + Express
+- MongoDB Atlas (cloud database)
+- RESTful API with routes for rolls, movements, and sheets
+- Deployment via [Render](https://render.com)
 
-Visualização em modal com exibição de QR Code.
+> ⚠️ The backend API used is hosted at:  
+> https://bobinas.onrender.com
+## 📦 How to Run
 
-Etiquetas para bobinas para impressão.
+### Frontend (locally)
 
-Filtros, abas e interface intuitiva.
-
-Relatórios automáticos por período e estoque atual.
-
-🧠 Tecnologias Utilizadas
-Frontend
-HTML5 + CSS3
-
-JavaScript puro (Vanilla JS)
-
-JSBarcode e QRCode.js (para geração de códigos)
-
-Layout responsivo e pronto para impressão
-
-Backend (exemplo)
-Node.js + Express
-
-MongoDB Atlas (banco de dados na nuvem)
-
-API REST com rotas para bobinas, movimentações e folhas
-
-Deploy via Render
-
-⚠️ A API backend utilizada está hospedada em:
-https://bobinas.onrender.com
-
-📦 Como Rodar
-Frontend (localmente)
-Clone o repositório:
-
+1. Clone the repository:
 bash
-Copiar
-Editar
 git clone https://github.com/yourusername/paper-rolls-inventory.git
-Abra o arquivo index.html diretamente no seu navegador.
 
-O sistema conecta automaticamente à API online.
+Open the index.html file directly in your browser.
 
-Backend (opcional)
-Para rodar localmente:
+The system automatically connects to the online API.
+
+Backend (optional)
+To run it locally:
 
 bash
 Copiar
@@ -63,23 +50,23 @@ Editar
 cd backend
 npm install
 npm run dev
-Configure o arquivo .env:
+Configure the .env file:
 
-ini
+env
 Copiar
 Editar
-MONGODB_URI= sua_string_de_conexão_mongodb
+MONGODB_URI= your_mongodb_connection_string
 PORT=5000
-📈 Relatórios Automáticos
-Estoque Atual
+📈 Automated Reports
+Current Inventory
 
-Movimentação por Período (com filtros de data)
+Movement by Period (with date filters)
 
-(Em breve) Alertas de Estoque Mínimo
+(Coming soon) Minimum Stock Alerts
 
-🔐 Autenticação
-O sistema pode ser ampliado com autenticação JWT ou proteção de rotas via middleware (em desenvolvimento).
+🔐 Authentication
+The system can be extended with JWT authentication or route protection middleware (in progress).
 
-✍️ Autor
-Desenvolvido por Gustavo Pizatto
-📧 Contato: gustavopizatto@hotmail.com
+✍️ Author
+Developed by Gustavo Pizatto
+📧 Contact: gustavopizatto@hotmail.com
