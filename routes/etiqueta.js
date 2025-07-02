@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { ObjectId } = require('mongodb');
-const db = require('../db'); // ajusta conforme seu setup
+const db = require('../config/db'); // ajusta conforme seu setup
 
 router.get('/etiqueta/:id', async (req, res) => {
   try {
