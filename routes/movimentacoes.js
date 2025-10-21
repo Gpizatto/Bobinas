@@ -28,12 +28,14 @@ module.exports = router;
 router.delete('/:id', async (req, res) => {
   try {
     const movimentacao = await Movimentacao.findByIdAndDelete(req.params.id);
+
     if (!movimentacao) {
       return res.status(404).json({ error: 'Movimentação não encontrada' });
     }
+
     res.json({ message: 'Movimentação deletada com sucesso' });
   } catch (err) {
+    console.error('Erro ao excluir movimentação:', err);
     res.status(500).json({ error: err.message });
   }
 });
-
