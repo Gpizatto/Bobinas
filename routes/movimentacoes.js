@@ -24,3 +24,16 @@ router.post('/', async (req, res) => {
 });
 
 module.exports = router;
+// ✅ DELETE movimentação por ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const movimentacao = await Movimentacao.findByIdAndDelete(req.params.id);
+    if (!movimentacao) {
+      return res.status(404).json({ error: 'Movimentação não encontrada' });
+    }
+    res.json({ message: 'Movimentação deletada com sucesso' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
