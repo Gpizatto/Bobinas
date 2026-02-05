@@ -60,5 +60,16 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// 🔥 DELETE - Apagar TODO o estoque de bobinas
+router.delete('/', async (req, res) => {
+  try {
+    await Bobina.deleteMany({});
+    res.json({ message: 'Estoque apagado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao apagar estoque:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;
