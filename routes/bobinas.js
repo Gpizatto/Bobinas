@@ -39,16 +39,31 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ✅ PUT atualizar bobina
+// ✅ PUT atualizar bobina (SEM ALTERAR codigoQR)
 router.put('/:id', async (req, res) => {
   try {
-    const bobina = await Bobina.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!bobina) return res.status(404).json({ error: 'Bobina não encontrada' });
+    // 🔒 NUNCA permitir alteração do código
+    delete req.body.codigoQR;
+
+    const bobina = await Bobina.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!bobina) {
+      return res.status(404).json({ error: 'Bobina não encontrada' });
+    }
+
     res.json(bobina);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
+
 
 // ✅ DELETE bobina
 router.delete('/:id', async (req, res) => {
