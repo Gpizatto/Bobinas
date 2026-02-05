@@ -12,9 +12,12 @@ const BobinaSchema = new mongoose.Schema({
     dataEntrada: Date,
     dataSaida: Date,
     codigoQR: {
-        type: String,
-        default: () => `BOBINA-${Date.now()}`
-    }
+  type: String,
+  required: true,
+  unique: true,
+  trim: true
+}
+
 });
 
 module.exports = mongoose.model('Bobina', BobinaSchema);
