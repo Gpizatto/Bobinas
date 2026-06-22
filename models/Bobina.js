@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const BobinaSchema = new mongoose.Schema({
     tipoPapel: String,
     fabricante: String,
-    peso: Number,
+    peso: Number, 
     pesoInicial: Number,
     largura: Number,
     gramatura: Number,
