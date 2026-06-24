@@ -85,6 +85,7 @@ router.post('/:id/entrada', async (req, res) => {
 });
 
 // Saída — envia para uso: decrementa saldo e soma em "quantidadeEmUso"
+// Aceita: quantidade, tipoMaquina, usuario, observacoes
 router.post('/:id/saida', async (req, res) => {
   try {
     const qtd = parseInt(req.body.quantidade, 10);
@@ -96,6 +97,14 @@ router.post('/:id/saida', async (req, res) => {
     }
     item.quantidade = (item.quantidade || 0) - qtd;
     item.quantidadeEmUso = (item.quantidadeEmUso || 0) + qtd;
+    // metadados da última saída (opcional)
+    item.ultimaSaida = {
+      data: new Date(),
+      quantidade: qtd,
+      tipoMaquina: req.body.tipoMaquina || '',
+      usuario: req.body.usuario || '',
+      observacoes: req.body.observacoes || ''
+    };
     await item.save();
     res.json(item);
   } catch (err) {
@@ -103,22 +112,75 @@ router.post('/:id/saida', async (req, res) => {
   }
 });
 
-// Retorno — devolve o que voltou do uso ao estoque
-// body: { quantidade } onde quantidade é o que voltou disponível para o estoque
+// Retorno — devolve folhas ao estoque, registra perda em kg e gera folhas filhas
+// body: {
+//   quantidadeRetorno: number (folhas que voltaram ao estoque),
+//   perdaKg: number (peso da perda em kg),
+//   filhas: [{ formato, quantidade }] (folhas filhas a criar - herdam tipo/gramatura/localização do pai),
+//   usuario, observacoes
+// }
 router.post('/:id/retorno', async (req, res) => {
   try {
-    const qtd = parseInt(req.body.quantidade, 10);
-    if (isNaN(qtd) || qtd < 0) return res.status(400).json({ error: 'Quantidade inválida' });
+    const qtdRetorno = parseInt(req.body.quantidadeRetorno, 10) || 0;
+    const perdaKg = parseFloat(req.body.perdaKg) || 0;
+    const filhas = Array.isArray(req.body.filhas) ? req.body.filhas : [];
+
+    if (qtdRetorno < 0) return res.status(400).json({ error: 'Quantidade de retorno inválida' });
+    if (perdaKg < 0) return res.status(400).json({ error: 'Perda em kg inválida' });
+
     const item = await Papelcartao.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
+
     const emUso = item.quantidadeEmUso || 0;
-    if (qtd > emUso) {
-      return res.status(400).json({ error: `Retorno (${qtd}) maior que a quantidade em uso (${emUso}).` });
+
+    // Soma das folhas filhas
+    const totalFilhas = filhas.reduce((s, f) => s + (parseInt(f.quantidade, 10) || 0), 0);
+
+    // qtdRetorno (volta ao próprio estoque) + totalFilhas (vira novos PCs) não pode passar do em uso
+    if (qtdRetorno + totalFilhas > emUso) {
+      return res.status(400).json({
+        error: `Retorno (${qtdRetorno}) + folhas filhas (${totalFilhas}) maior que a quantidade em uso (${emUso}).`
+      });
     }
-    item.quantidade = (item.quantidade || 0) + qtd;
-    item.quantidadeEmUso = emUso - qtd; // o que não voltou é considerado consumido
+
+    // Atualiza o item pai
+    item.quantidade = (item.quantidade || 0) + qtdRetorno;
+    item.quantidadeEmUso = emUso - qtdRetorno - totalFilhas;
+    // O restante (emUso - qtdRetorno - totalFilhas) é considerado consumido
+    item.ultimoRetorno = {
+      data: new Date(),
+      quantidadeRetorno: qtdRetorno,
+      perdaKg,
+      filhasGeradas: totalFilhas,
+      usuario: req.body.usuario || '',
+      observacoes: req.body.observacoes || ''
+    };
     await item.save();
-    res.json(item);
+
+    // Cria as folhas filhas (herdando tipo/gramatura/localização do pai, só muda formato e quantidade)
+    const filhasCriadas = [];
+    for (const f of filhas) {
+      const qFilha = parseInt(f.quantidade, 10) || 0;
+      const fmtFilha = (f.formato || '').trim();
+      if (qFilha <= 0 || !fmtFilha) continue;
+      const codigo = await proximoCodigo();
+      const nova = new Papelcartao({
+        codigo,
+        tipo: item.tipo,
+        localizacao: item.localizacao,
+        quantidade: qFilha,
+        formato: fmtFilha,
+        gramatura: item.gramatura,
+        status: 'DISPONÍVEL',
+        quantidadeEmUso: 0,
+        observacoes: `Originada do retorno de ${item.codigo}`,
+        idPai: item._id
+      });
+      await nova.save();
+      filhasCriadas.push(nova);
+    }
+
+    res.json({ pai: item, filhas: filhasCriadas, perdaKg });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
