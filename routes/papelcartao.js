@@ -133,20 +133,19 @@ router.post('/:id/retorno', async (req, res) => {
 
     const emUso = item.quantidadeEmUso || 0;
 
-    // Soma das folhas filhas
-    const totalFilhas = filhas.reduce((s, f) => s + (parseInt(f.quantidade, 10) || 0), 0);
-
-    // qtdRetorno (volta ao próprio estoque) + totalFilhas (vira novos PCs) não pode passar do em uso
-    if (qtdRetorno + totalFilhas > emUso) {
+    if (qtdRetorno > emUso) {
       return res.status(400).json({
-        error: `Retorno (${qtdRetorno}) + folhas filhas (${totalFilhas}) maior que a quantidade em uso (${emUso}).`
+        error: `Retorno (${qtdRetorno}) maior que a quantidade em uso (${emUso}).`
       });
     }
 
+    // Soma das folhas filhas (apenas informativa - cortes podem gerar mais folhas que o original)
+    const totalFilhas = filhas.reduce((s, f) => s + (parseInt(f.quantidade, 10) || 0), 0);
+
     // Atualiza o item pai
     item.quantidade = (item.quantidade || 0) + qtdRetorno;
-    item.quantidadeEmUso = emUso - qtdRetorno - totalFilhas;
-    // O restante (emUso - qtdRetorno - totalFilhas) é considerado consumido
+    // Zera o que estava em uso (todo o material original foi processado: voltou, virou filha, virou perda ou refilo)
+    item.quantidadeEmUso = 0;
     item.ultimoRetorno = {
       data: new Date(),
       quantidadeRetorno: qtdRetorno,
