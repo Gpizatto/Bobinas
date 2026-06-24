@@ -5,11 +5,12 @@ const PapelcartaoSchema = new mongoose.Schema({
   tipo: { type: String, required: true },
   localizacao: { type: String, default: '' },
   quantidade: { type: Number, required: true, default: 0 },
-  larguraCm: { type: Number, required: true },
-  comprimentoCm: { type: Number, required: true },
+  formato: { type: String, default: '' }, // texto livre: 64x96, 50x70 etc.
   gramatura: { type: Number, default: 0 }, // g/m²
-  // Status manual: DISPONÍVEL ou INATIVA. SEM ESTOQUE é derivado da quantidade.
+  // Status manual: DISPONÍVEL ou INATIVA. SEM ESTOQUE/EM USO são derivados.
   status: { type: String, default: 'DISPONÍVEL' },
+  // Quantidade que está fora (em uso). >0 significa EM USO.
+  quantidadeEmUso: { type: Number, default: 0 },
   observacoes: { type: String, default: '' },
   dataCadastro: { type: Date, default: Date.now }
 });
