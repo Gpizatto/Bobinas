@@ -16,7 +16,6 @@ async function proximoCodigo() {
   return `PC-${String(n + 1).padStart(4, '0')}`;
 }
 
-// GET todos
 router.get('/', async (req, res) => {
   try {
     const itens = await Papelcartao.find().sort({ codigo: 1 });
@@ -26,7 +25,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET por ID
 router.get('/:id', async (req, res) => {
   try {
     const item = await Papelcartao.findById(req.params.id);
@@ -37,7 +35,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST criar
 router.post('/', async (req, res) => {
   try {
     const dados = { ...req.body };
@@ -52,7 +49,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT atualizar
 router.put('/:id', async (req, res) => {
   try {
     const item = await Papelcartao.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -63,7 +59,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE
 router.delete('/:id', async (req, res) => {
   try {
     const item = await Papelcartao.findByIdAndDelete(req.params.id);
@@ -74,7 +69,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST entrada — incrementa
+// Entrada — incrementa o saldo
 router.post('/:id/entrada', async (req, res) => {
   try {
     const qtd = parseInt(req.body.quantidade, 10);
@@ -89,7 +84,7 @@ router.post('/:id/entrada', async (req, res) => {
   }
 });
 
-// POST saída — decrementa (não permite negativo)
+// Saída — envia para uso: decrementa saldo e soma em "quantidadeEmUso"
 router.post('/:id/saida', async (req, res) => {
   try {
     const qtd = parseInt(req.body.quantidade, 10);
@@ -100,6 +95,28 @@ router.post('/:id/saida', async (req, res) => {
       return res.status(400).json({ error: 'Quantidade insuficiente em estoque' });
     }
     item.quantidade = (item.quantidade || 0) - qtd;
+    item.quantidadeEmUso = (item.quantidadeEmUso || 0) + qtd;
+    await item.save();
+    res.json(item);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Retorno — devolve o que voltou do uso ao estoque
+// body: { quantidade } onde quantidade é o que voltou disponível para o estoque
+router.post('/:id/retorno', async (req, res) => {
+  try {
+    const qtd = parseInt(req.body.quantidade, 10);
+    if (isNaN(qtd) || qtd < 0) return res.status(400).json({ error: 'Quantidade inválida' });
+    const item = await Papelcartao.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
+    const emUso = item.quantidadeEmUso || 0;
+    if (qtd > emUso) {
+      return res.status(400).json({ error: `Retorno (${qtd}) maior que a quantidade em uso (${emUso}).` });
+    }
+    item.quantidade = (item.quantidade || 0) + qtd;
+    item.quantidadeEmUso = emUso - qtd; // o que não voltou é considerado consumido
     await item.save();
     res.json(item);
   } catch (err) {
