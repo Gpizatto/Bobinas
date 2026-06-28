@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Papelcartao = require('../models/Papelcartao');
+const Movimentacao = require('../models/Movimentacao');
 
 // Gera próximo código sequencial PC-0001, PC-0002...
 async function proximoCodigo() {
@@ -106,6 +107,25 @@ router.post('/:id/saida', async (req, res) => {
       observacoes: req.body.observacoes || ''
     };
     await item.save();
+
+    // Grava no histórico de movimentações
+    try {
+      await new Movimentacao({
+        tipoItem: 'papelcartao',
+        idItem: item._id,
+        codigoItem: item.codigo || '',
+        descricaoItem: `${item.tipo || ''} ${item.formato || ''}`.trim(),
+        tipoMovimentacao: 'SAIDA',
+        quantidade: qtd,
+        unidade: 'folhas',
+        tipoMaquina: req.body.tipoMaquina || '',
+        usuario: req.body.usuario || '',
+        observacoes: req.body.observacoes || ''
+      }).save();
+    } catch (e) {
+      console.error('Falha ao gravar movimentação de papelcartão (SAIDA):', e);
+    }
+
     res.json(item);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -177,6 +197,25 @@ router.post('/:id/retorno', async (req, res) => {
       });
       await nova.save();
       filhasCriadas.push(nova);
+    }
+
+    // Grava no histórico de movimentações (RETORNO do pai)
+    try {
+      await new Movimentacao({
+        tipoItem: 'papelcartao',
+        idItem: item._id,
+        codigoItem: item.codigo || '',
+        descricaoItem: `${item.tipo || ''} ${item.formato || ''}`.trim(),
+        tipoMovimentacao: 'RETORNO',
+        quantidade: qtdRetorno,
+        unidade: 'folhas',
+        usuario: req.body.usuario || '',
+        observacoes: req.body.observacoes || '',
+        perdaKg,
+        filhasGeradas: totalFilhas
+      }).save();
+    } catch (e) {
+      console.error('Falha ao gravar movimentação de papelcartão (RETORNO):', e);
     }
 
     res.json({ pai: item, filhas: filhasCriadas, perdaKg });
