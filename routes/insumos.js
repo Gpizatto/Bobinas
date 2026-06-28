@@ -2,11 +2,21 @@ const express = require('express');
 const router = express.Router();
 const Insumo = require('../models/Insumo');
 
-// GET todos
+// GET todos os lançamentos (ordenados por data, mais recentes primeiro)
+// Suporta filtros opcionais: ?codigo=XX&funcionario=YY&setor=ZZ&inicio=ISO&fim=ISO
 router.get('/', async (req, res) => {
   try {
-    const itens = await Insumo.find().sort({ nome: 1 });
-    res.json(itens);
+    const filtro = {};
+    if (req.query.codigo) filtro.codigo = req.query.codigo;
+    if (req.query.funcionario) filtro.funcionario = req.query.funcionario;
+    if (req.query.setor) filtro.setor = req.query.setor;
+    if (req.query.inicio || req.query.fim) {
+      filtro.data = {};
+      if (req.query.inicio) filtro.data.$gte = new Date(req.query.inicio);
+      if (req.query.fim) filtro.data.$lte = new Date(req.query.fim);
+    }
+    const lancamentos = await Insumo.find(filtro).sort({ data: 1, _id: 1 });
+    res.json(lancamentos);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -16,16 +26,17 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const item = await Insumo.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Insumo não encontrado' });
+    if (!item) return res.status(404).json({ error: 'Lançamento não encontrado' });
     res.json(item);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST criar
+// POST novo lançamento
 router.post('/', async (req, res) => {
   try {
+    if (!req.body.codigo) return res.status(400).json({ error: 'Código é obrigatório' });
     const novo = new Insumo(req.body);
     await novo.save();
     res.status(201).json(novo);
@@ -34,58 +45,25 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT atualizar
+// PUT atualizar lançamento
 router.put('/:id', async (req, res) => {
   try {
     const item = await Insumo.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!item) return res.status(404).json({ error: 'Insumo não encontrado' });
+    if (!item) return res.status(404).json({ error: 'Lançamento não encontrado' });
     res.json(item);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// DELETE
+// DELETE lançamento
 router.delete('/:id', async (req, res) => {
   try {
     const item = await Insumo.findByIdAndDelete(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Insumo não encontrado' });
-    res.json({ message: 'Insumo removido' });
+    if (!item) return res.status(404).json({ error: 'Lançamento não encontrado' });
+    res.json({ message: 'Lançamento removido' });
   } catch (err) {
     res.status(500).json({ error: err.message });
-  }
-});
-
-// POST entrada — incrementa
-router.post('/:id/entrada', async (req, res) => {
-  try {
-    const qtd = parseFloat(req.body.quantidade);
-    if (isNaN(qtd) || qtd <= 0) return res.status(400).json({ error: 'Quantidade inválida' });
-    const item = await Insumo.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Insumo não encontrado' });
-    item.quantidade = (item.quantidade || 0) + qtd;
-    await item.save();
-    res.json(item);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// POST saída — decrementa (não permite negativo)
-router.post('/:id/saida', async (req, res) => {
-  try {
-    const qtd = parseFloat(req.body.quantidade);
-    if (isNaN(qtd) || qtd <= 0) return res.status(400).json({ error: 'Quantidade inválida' });
-    const item = await Insumo.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Insumo não encontrado' });
-    if (qtd > (item.quantidade || 0)) {
-      return res.status(400).json({ error: 'Quantidade insuficiente em estoque' });
-    }
-    item.quantidade = (item.quantidade || 0) - qtd;
-    await item.save();
-    res.json(item);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
   }
 });
 
