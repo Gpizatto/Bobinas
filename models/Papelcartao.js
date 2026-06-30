@@ -9,6 +9,7 @@ const PapelcartaoSchema = new mongoose.Schema({
   gramatura: { type: Number, default: 0 },
   status: { type: String, default: 'DISPONÍVEL' },
   quantidadeEmUso: { type: Number, default: 0 },
+  maquinaAtual: { type: String, default: '' },
   observacoes: { type: String, default: '' },
   dataCadastro: { type: Date, default: Date.now },
   idPai: { type: mongoose.Schema.Types.ObjectId, ref: 'Papelcartao', default: null },
