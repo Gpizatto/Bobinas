@@ -98,6 +98,7 @@ router.post('/:id/saida', async (req, res) => {
     }
     item.quantidade = (item.quantidade || 0) - qtd;
     item.quantidadeEmUso = (item.quantidadeEmUso || 0) + qtd;
+    item.maquinaAtual = req.body.tipoMaquina || '';
     // metadados da última saída (opcional)
     item.ultimaSaida = {
       data: new Date(),
@@ -166,6 +167,7 @@ router.post('/:id/retorno', async (req, res) => {
     item.quantidade = (item.quantidade || 0) + qtdRetorno;
     // Zera o que estava em uso (todo o material original foi processado: voltou, virou filha, virou perda ou refilo)
     item.quantidadeEmUso = 0;
+    item.maquinaAtual = ''; // ciclo encerrado
     item.ultimoRetorno = {
       data: new Date(),
       quantidadeRetorno: qtdRetorno,
@@ -219,6 +221,47 @@ router.post('/:id/retorno', async (req, res) => {
     }
 
     res.json({ pai: item, filhas: filhasCriadas, perdaKg });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Transferência entre máquinas — não mexe em estoque, só muda a máquina atual
+// body: { novaMaquina, usuario, observacoes }
+router.post('/:id/transferir', async (req, res) => {
+  try {
+    const novaMaquina = (req.body.novaMaquina || '').trim();
+    if (!novaMaquina) return res.status(400).json({ error: 'Nova máquina é obrigatória' });
+
+    const item = await Papelcartao.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
+    if ((item.quantidadeEmUso || 0) <= 0) {
+      return res.status(400).json({ error: 'Este papelcartão não está em uso (não há lote para transferir).' });
+    }
+
+    const maquinaAnterior = item.maquinaAtual || '-';
+    item.maquinaAtual = novaMaquina;
+    await item.save();
+
+    // Grava no histórico de movimentações
+    try {
+      await new Movimentacao({
+        tipoItem: 'papelcartao',
+        idItem: item._id,
+        codigoItem: item.codigo || '',
+        descricaoItem: `${item.tipo || ''} ${item.formato || ''}`.trim(),
+        tipoMovimentacao: 'TRANSFERENCIA',
+        quantidade: item.quantidadeEmUso || 0,
+        unidade: 'folhas',
+        tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
+        usuario: req.body.usuario || '',
+        observacoes: req.body.observacoes || ''
+      }).save();
+    } catch (e) {
+      console.error('Falha ao gravar movimentação de papelcartão (TRANSFERENCIA):', e);
+    }
+
+    res.json(item);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
