@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Bobina = require('../models/Bobina');
+const Movimentacao = require('../models/Movimentacao');
 
 // ✅ GET todas as bobinas
 router.get('/', async (req, res) => {
@@ -39,31 +40,16 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ✅ PUT atualizar bobina (SEM ALTERAR codigoQR)
+// ✅ PUT atualizar bobina
 router.put('/:id', async (req, res) => {
   try {
-    // 🔒 NUNCA permitir alteração do código
-    delete req.body.codigoQR;
-
-    const bobina = await Bobina.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    );
-
-    if (!bobina) {
-      return res.status(404).json({ error: 'Bobina não encontrada' });
-    }
-
+    const bobina = await Bobina.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!bobina) return res.status(404).json({ error: 'Bobina não encontrada' });
     res.json(bobina);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
-
 
 // ✅ DELETE bobina
 router.delete('/:id', async (req, res) => {
@@ -75,54 +61,47 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// 🔥 DELETE - Apagar TODO o estoque de bobinas
-router.delete('/', async (req, res) => {
-  try {
-    await Bobina.deleteMany({});
-    res.json({ message: 'Estoque apagado com sucesso' });
-  } catch (err) {
-    console.error('Erro ao apagar estoque:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-// 🚀 IMPORTAÇÃO EM LOTE (BATCH)
-router.post('/importar', async (req, res) => {
-  try {
-    const { novas, atualizadas } = req.body;
 
-    let criadas = 0;
-    let atualizadasCount = 0;
+// Transferência entre máquinas — não mexe em peso, só muda a máquina atual
+// body: { novaMaquina, usuario, observacoes }
+router.post('/:id/transferir', async (req, res) => {
+  try {
+    const novaMaquina = (req.body.novaMaquina || '').trim();
+    if (!novaMaquina) return res.status(400).json({ error: 'Nova máquina é obrigatória' });
 
-    // 🆕 cria novas bobinas
-    if (Array.isArray(novas) && novas.length > 0) {
-      await Bobina.insertMany(novas);
-      criadas = novas.length;
+    const bobina = await Bobina.findById(req.params.id);
+    if (!bobina) return res.status(404).json({ error: 'Bobina não encontrada' });
+    if (!bobina.dataSaida) {
+      return res.status(400).json({ error: 'Esta bobina não está em uso (não há lote para transferir).' });
     }
 
-    // 🔁 atualiza existentes
-    if (Array.isArray(atualizadas) && atualizadas.length > 0) {
-      const ops = atualizadas.map(b => ({
-        updateOne: {
-          filter: { _id: b._id },
-          update: b
-        }
-      }));
+    const maquinaAnterior = bobina.maquinaAtual || '-';
+    bobina.maquinaAtual = novaMaquina;
+    await bobina.save();
 
-      await Bobina.bulkWrite(ops);
-      atualizadasCount = atualizadas.length;
+    // Grava no histórico de movimentações
+    try {
+      await new Movimentacao({
+        idBobina: bobina._id,
+        tipoItem: 'bobina',
+        idItem: bobina._id,
+        codigoItem: bobina.codigoQR || '',
+        descricaoItem: `${bobina.tipoPapel || ''} ${bobina.largura ? bobina.largura + 'cm' : ''}`.trim(),
+        tipoMovimentacao: 'TRANSFERENCIA',
+        quantidade: bobina.peso || 0,
+        unidade: 'kg',
+        tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
+        usuario: req.body.usuario || '',
+        observacoes: req.body.observacoes || ''
+      }).save();
+    } catch (e) {
+      console.error('Falha ao gravar movimentação de bobina (TRANSFERENCIA):', e);
     }
 
-    res.json({
-      message: 'Importação concluída',
-      criadas,
-      atualizadas: atualizadasCount
-    });
-
+    res.json(bobina);
   } catch (err) {
-    console.error('Erro na importação em lote:', err);
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
-
 
 module.exports = router;
