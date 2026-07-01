@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const BobinaSchema = new mongoose.Schema({
     tipoPapel: String,
     fabricante: String,
-    peso: Number, 
+    peso: Number,
     pesoInicial: Number,
     largura: Number,
     gramatura: Number,
@@ -11,6 +11,7 @@ const BobinaSchema = new mongoose.Schema({
     localizacao: String,
     dataEntrada: Date,
     dataSaida: Date,
+    maquinaAtual: { type: String, default: '' },
     // Status da bobina: DISPONÍVEL | EM USO | FINALIZADA
     // Atualizado automaticamente quando o saldo (peso) chega a zero.
     status: {
