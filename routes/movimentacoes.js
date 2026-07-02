@@ -3,6 +3,7 @@ const router = express.Router();
 const Movimentacao = require('../models/Movimentacao');
 const Bobina = require('../models/Bobina');
 const Papelcartao = require('../models/Papelcartao');
+const ProdutoAcabado = require('../models/ProdutoAcabado');
 
 // GET todas as movimentações
 router.get('/', async (req, res) => {
@@ -71,6 +72,19 @@ router.put('/:id', async (req, res) => {
           pc.quantidade = (pc.quantidade || 0) + delta;
         }
         await pc.save();
+      } else if (tipoItem === 'produto_acabado') {
+        const prod = await ProdutoAcabado.findById(idItem);
+        if (!prod) return res.status(400).json({ error: 'Produto acabado referenciado não existe mais' });
+        if (mov.tipoMovimentacao === 'ENTRADA') {
+          prod.totalEntradas = (prod.totalEntradas || 0) + delta;
+          if (prod.totalEntradas < 0) return res.status(400).json({ error: 'Total de entradas ficaria negativo' });
+        } else if (mov.tipoMovimentacao === 'SAIDA') {
+          prod.totalSaidas = (prod.totalSaidas || 0) + delta;
+          if (prod.totalSaidas < 0) return res.status(400).json({ error: 'Total de saídas ficaria negativo' });
+          const saldo = (prod.totalEntradas || 0) - prod.totalSaidas;
+          if (saldo < 0) return res.status(400).json({ error: `Saldo ficaria negativo (${saldo})` });
+        }
+        await prod.save();
       }
     }
 
@@ -141,6 +155,28 @@ router.delete('/:id', async (req, res) => {
           pc.quantidadeEmUso = (pc.quantidadeEmUso || 0) + quantidade;
           await pc.save();
         }
+      }
+    } else if (tipoItem === 'produto_acabado') {
+      const prod = await ProdutoAcabado.findById(idItem);
+      if (prod) {
+        if (mov.tipoMovimentacao === 'ENTRADA') {
+          // Reverter entrada = subtrair do totalEntradas
+          prod.totalEntradas = (prod.totalEntradas || 0) - quantidade;
+          if (prod.totalEntradas < 0) {
+            return res.status(400).json({ error: 'Total de entradas ficaria negativo. Ajuste antes de excluir.' });
+          }
+          const saldo = prod.totalEntradas - (prod.totalSaidas || 0);
+          if (saldo < 0) {
+            return res.status(400).json({ error: `Saldo ficaria negativo (${saldo}). Ajuste antes de excluir.` });
+          }
+        } else if (mov.tipoMovimentacao === 'SAIDA') {
+          // Reverter saída = subtrair do totalSaidas
+          prod.totalSaidas = (prod.totalSaidas || 0) - quantidade;
+          if (prod.totalSaidas < 0) {
+            return res.status(400).json({ error: 'Total de saídas ficaria negativo. Ajuste antes de excluir.' });
+          }
+        }
+        await prod.save();
       }
     }
 
