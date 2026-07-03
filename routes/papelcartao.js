@@ -17,9 +17,45 @@ async function proximoCodigo() {
   return `PC-${String(n + 1).padStart(4, '0')}`;
 }
 
+// Migra o campo legado (quantidadeEmUso + maquinaAtual) para um lote no array lotesEmUso.
+// Roda uma vez, quando o item é lido pela primeira vez após a mudança.
+function migrarLoteLegado(item) {
+  if (!item) return;
+  const temLotes = Array.isArray(item.lotesEmUso) && item.lotesEmUso.length > 0;
+  const temLegado = (item.quantidadeEmUso || 0) > 0;
+  if (!temLotes && temLegado) {
+    item.lotesEmUso = [{
+      quantidade: item.quantidadeEmUso,
+      maquinaAtual: item.maquinaAtual || '',
+      usuario: (item.ultimaSaida && item.ultimaSaida.usuario) || '',
+      observacoes: 'Lote migrado automaticamente',
+      dataSaida: (item.ultimaSaida && item.ultimaSaida.data) || new Date()
+    }];
+  }
+  // Recalcula os campos legados como soma dos lotes (mantém compatibilidade com telas antigas)
+  const soma = (item.lotesEmUso || []).reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
+  item.quantidadeEmUso = soma;
+  // maquinaAtual legado = concat das máquinas (info)
+  if (item.lotesEmUso && item.lotesEmUso.length > 0) {
+    const maqs = [...new Set(item.lotesEmUso.map(l => l.maquinaAtual).filter(Boolean))];
+    item.maquinaAtual = maqs.join(', ');
+  } else {
+    item.maquinaAtual = '';
+  }
+}
+
 router.get('/', async (req, res) => {
   try {
     const itens = await Papelcartao.find().sort({ codigo: 1 });
+    // Migração automática (só para itens antigos)
+    for (const item of itens) {
+      const temLotes = Array.isArray(item.lotesEmUso) && item.lotesEmUso.length > 0;
+      const temLegado = (item.quantidadeEmUso || 0) > 0;
+      if (!temLotes && temLegado) {
+        migrarLoteLegado(item);
+        await item.save();
+      }
+    }
     res.json(itens);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -30,6 +66,12 @@ router.get('/:id', async (req, res) => {
   try {
     const item = await Papelcartao.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
+    const temLotes = Array.isArray(item.lotesEmUso) && item.lotesEmUso.length > 0;
+    const temLegado = (item.quantidadeEmUso || 0) > 0;
+    if (!temLotes && temLegado) {
+      migrarLoteLegado(item);
+      await item.save();
+    }
     res.json(item);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -85,8 +127,7 @@ router.post('/:id/entrada', async (req, res) => {
   }
 });
 
-// Saída — envia para uso: decrementa saldo e soma em "quantidadeEmUso"
-// Aceita: quantidade, tipoMaquina, usuario, observacoes
+// Saída — cria um NOVO lote em uso
 router.post('/:id/saida', async (req, res) => {
   try {
     const qtd = parseInt(req.body.quantidade, 10);
@@ -96,20 +137,36 @@ router.post('/:id/saida', async (req, res) => {
     if (qtd > (item.quantidade || 0)) {
       return res.status(400).json({ error: 'Quantidade insuficiente em estoque' });
     }
+
+    const tipoMaquina = (req.body.tipoMaquina || '').trim();
+    if (!tipoMaquina) return res.status(400).json({ error: 'Máquina é obrigatória na saída' });
+
+    // Retira do estoque e cria um novo lote em uso
     item.quantidade = (item.quantidade || 0) - qtd;
-    item.quantidadeEmUso = (item.quantidadeEmUso || 0) + qtd;
-    item.maquinaAtual = req.body.tipoMaquina || '';
-    // metadados da última saída (opcional)
+    if (!Array.isArray(item.lotesEmUso)) item.lotesEmUso = [];
+    item.lotesEmUso.push({
+      quantidade: qtd,
+      maquinaAtual: tipoMaquina,
+      usuario: req.body.usuario || '',
+      observacoes: req.body.observacoes || '',
+      dataSaida: new Date()
+    });
+
+    // Recalcula legado (soma)
+    item.quantidadeEmUso = item.lotesEmUso.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
+    const maqs = [...new Set(item.lotesEmUso.map(l => l.maquinaAtual).filter(Boolean))];
+    item.maquinaAtual = maqs.join(', ');
+
     item.ultimaSaida = {
       data: new Date(),
       quantidade: qtd,
-      tipoMaquina: req.body.tipoMaquina || '',
+      tipoMaquina,
       usuario: req.body.usuario || '',
       observacoes: req.body.observacoes || ''
     };
     await item.save();
 
-    // Grava no histórico de movimentações
+    // Histórico
     try {
       await new Movimentacao({
         tipoItem: 'papelcartao',
@@ -119,12 +176,12 @@ router.post('/:id/saida', async (req, res) => {
         tipoMovimentacao: 'SAIDA',
         quantidade: qtd,
         unidade: 'folhas',
-        tipoMaquina: req.body.tipoMaquina || '',
+        tipoMaquina,
         usuario: req.body.usuario || '',
         observacoes: req.body.observacoes || ''
       }).save();
     } catch (e) {
-      console.error('Falha ao gravar movimentação de papelcartão (SAIDA):', e);
+      console.error('Falha ao gravar movimentação (SAIDA):', e);
     }
 
     res.json(item);
@@ -133,53 +190,39 @@ router.post('/:id/saida', async (req, res) => {
   }
 });
 
-// Retorno — devolve folhas ao estoque, registra perda em kg e gera folhas filhas
-// body: {
-//   quantidadeRetorno: number (folhas que voltaram ao estoque),
-//   perdaKg: number (peso da perda em kg),
-//   filhas: [{ formato, quantidade }] (folhas filhas a criar - herdam tipo/gramatura/localização do pai),
-//   usuario, observacoes
-// }
+// Retorno — encerra UM lote específico
+// body: { loteId, quantidadeRetorno, perdaKg, filhas: [{formato, quantidade}], usuario, observacoes }
 router.post('/:id/retorno', async (req, res) => {
   try {
+    const item = await Papelcartao.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
+
+    const loteId = req.body.loteId;
+    if (!loteId) return res.status(400).json({ error: 'É preciso informar qual lote está sendo retornado.' });
+
+    const lote = item.lotesEmUso.id(loteId);
+    if (!lote) return res.status(400).json({ error: 'Lote não encontrado neste papelcartão.' });
+
     const qtdRetorno = parseInt(req.body.quantidadeRetorno, 10) || 0;
     const perdaKg = parseFloat(req.body.perdaKg) || 0;
     const filhas = Array.isArray(req.body.filhas) ? req.body.filhas : [];
 
     if (qtdRetorno < 0) return res.status(400).json({ error: 'Quantidade de retorno inválida' });
     if (perdaKg < 0) return res.status(400).json({ error: 'Perda em kg inválida' });
-
-    const item = await Papelcartao.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
-
-    const emUso = item.quantidadeEmUso || 0;
-
-    if (qtdRetorno > emUso) {
-      return res.status(400).json({
-        error: `Retorno (${qtdRetorno}) maior que a quantidade em uso (${emUso}).`
-      });
+    if (qtdRetorno > (lote.quantidade || 0)) {
+      return res.status(400).json({ error: `Retorno (${qtdRetorno}) maior que o lote (${lote.quantidade}).` });
     }
 
-    // Soma das folhas filhas (apenas informativa - cortes podem gerar mais folhas que o original)
-    const totalFilhas = filhas.reduce((s, f) => s + (parseInt(f.quantidade, 10) || 0), 0);
+    // Guarda descrição do lote antes de removê-lo
+    const maquinaDoLote = lote.maquinaAtual;
 
-    // Atualiza o item pai
+    // Devolve ao estoque e encerra o lote
     item.quantidade = (item.quantidade || 0) + qtdRetorno;
-    // Zera o que estava em uso (todo o material original foi processado: voltou, virou filha, virou perda ou refilo)
-    item.quantidadeEmUso = 0;
-    item.maquinaAtual = ''; // ciclo encerrado
-    item.ultimoRetorno = {
-      data: new Date(),
-      quantidadeRetorno: qtdRetorno,
-      perdaKg,
-      filhasGeradas: totalFilhas,
-      usuario: req.body.usuario || '',
-      observacoes: req.body.observacoes || ''
-    };
-    await item.save();
+    lote.deleteOne(); // remove o subdocumento
 
-    // Cria as folhas filhas (herdando tipo/gramatura/localização do pai, só muda formato e quantidade)
+    // Cria folhas filhas
     const filhasCriadas = [];
+    const totalFilhas = filhas.reduce((s, f) => s + (parseInt(f.quantidade, 10) || 0), 0);
     for (const f of filhas) {
       const qFilha = parseInt(f.quantidade, 10) || 0;
       const fmtFilha = (f.formato || '').trim();
@@ -201,7 +244,22 @@ router.post('/:id/retorno', async (req, res) => {
       filhasCriadas.push(nova);
     }
 
-    // Grava no histórico de movimentações (RETORNO do pai)
+    // Recalcula legado
+    item.quantidadeEmUso = item.lotesEmUso.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
+    const maqs = [...new Set(item.lotesEmUso.map(l => l.maquinaAtual).filter(Boolean))];
+    item.maquinaAtual = maqs.join(', ');
+
+    item.ultimoRetorno = {
+      data: new Date(),
+      quantidadeRetorno: qtdRetorno,
+      perdaKg,
+      filhasGeradas: totalFilhas,
+      usuario: req.body.usuario || '',
+      observacoes: req.body.observacoes || ''
+    };
+    await item.save();
+
+    // Histórico
     try {
       await new Movimentacao({
         tipoItem: 'papelcartao',
@@ -211,13 +269,14 @@ router.post('/:id/retorno', async (req, res) => {
         tipoMovimentacao: 'RETORNO',
         quantidade: qtdRetorno,
         unidade: 'folhas',
+        tipoMaquina: maquinaDoLote,
         usuario: req.body.usuario || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         filhasGeradas: totalFilhas
       }).save();
     } catch (e) {
-      console.error('Falha ao gravar movimentação de papelcartão (RETORNO):', e);
+      console.error('Falha ao gravar movimentação (RETORNO):', e);
     }
 
     res.json({ pai: item, filhas: filhasCriadas, perdaKg });
@@ -226,8 +285,8 @@ router.post('/:id/retorno', async (req, res) => {
   }
 });
 
-// Transferência entre máquinas — não mexe em estoque, só muda a máquina atual
-// body: { novaMaquina, usuario, observacoes, perdaKg }
+// Transferência — move UM lote específico para outra máquina
+// body: { loteId, novaMaquina, usuario, observacoes, perdaKg }
 router.post('/:id/transferir', async (req, res) => {
   try {
     const novaMaquina = (req.body.novaMaquina || '').trim();
@@ -235,16 +294,28 @@ router.post('/:id/transferir', async (req, res) => {
 
     const item = await Papelcartao.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Registro não encontrado' });
-    if ((item.quantidadeEmUso || 0) <= 0) {
-      return res.status(400).json({ error: 'Este papelcartão não está em uso (não há lote para transferir).' });
-    }
+
+    const loteId = req.body.loteId;
+    if (!loteId) return res.status(400).json({ error: 'É preciso informar qual lote está sendo transferido.' });
+
+    const lote = item.lotesEmUso.id(loteId);
+    if (!lote) return res.status(400).json({ error: 'Lote não encontrado neste papelcartão.' });
 
     const perdaKg = parseFloat(req.body.perdaKg) || 0;
-    const maquinaAnterior = item.maquinaAtual || '-';
-    item.maquinaAtual = novaMaquina;
+    const maquinaAnterior = lote.maquinaAtual || '-';
+
+    if (maquinaAnterior === novaMaquina) {
+      return res.status(400).json({ error: 'A máquina escolhida é a mesma atual do lote.' });
+    }
+
+    lote.maquinaAtual = novaMaquina;
+
+    // Recalcula maquinaAtual legado
+    const maqs = [...new Set(item.lotesEmUso.map(l => l.maquinaAtual).filter(Boolean))];
+    item.maquinaAtual = maqs.join(', ');
+
     await item.save();
 
-    // Grava no histórico de movimentações
     try {
       await new Movimentacao({
         tipoItem: 'papelcartao',
@@ -252,7 +323,7 @@ router.post('/:id/transferir', async (req, res) => {
         codigoItem: item.codigo || '',
         descricaoItem: `${item.tipo || ''} ${item.formato || ''}`.trim(),
         tipoMovimentacao: 'TRANSFERENCIA',
-        quantidade: item.quantidadeEmUso || 0,
+        quantidade: lote.quantidade || 0,
         unidade: 'folhas',
         tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
         usuario: req.body.usuario || '',
@@ -260,7 +331,7 @@ router.post('/:id/transferir', async (req, res) => {
         perdaKg
       }).save();
     } catch (e) {
-      console.error('Falha ao gravar movimentação de papelcartão (TRANSFERENCIA):', e);
+      console.error('Falha ao gravar movimentação (TRANSFERENCIA):', e);
     }
 
     res.json(item);
