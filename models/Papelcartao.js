@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
 
+// Lote individual em uso — cada saída cria um documento aqui.
+const LoteEmUsoSchema = new mongoose.Schema({
+  quantidade: { type: Number, required: true },
+  maquinaAtual: { type: String, default: '' },
+  usuario: { type: String, default: '' },
+  observacoes: { type: String, default: '' },
+  dataSaida: { type: Date, default: Date.now }
+});
+
 const PapelcartaoSchema = new mongoose.Schema({
   codigo: { type: String, unique: true },
   tipo: { type: String, required: true },
@@ -8,6 +17,9 @@ const PapelcartaoSchema = new mongoose.Schema({
   formato: { type: String, default: '' },
   gramatura: { type: Number, default: 0 },
   status: { type: String, default: 'DISPONÍVEL' },
+  // Cada saída gera um novo lote. Retornos/transferências agem em um lote específico.
+  lotesEmUso: [LoteEmUsoSchema],
+  // Campo legado (uso interno para migração). Mantido para compatibilidade.
   quantidadeEmUso: { type: Number, default: 0 },
   maquinaAtual: { type: String, default: '' },
   observacoes: { type: String, default: '' },
