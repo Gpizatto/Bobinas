@@ -227,7 +227,7 @@ router.post('/:id/retorno', async (req, res) => {
 });
 
 // Transferência entre máquinas — não mexe em estoque, só muda a máquina atual
-// body: { novaMaquina, usuario, observacoes }
+// body: { novaMaquina, usuario, observacoes, perdaKg }
 router.post('/:id/transferir', async (req, res) => {
   try {
     const novaMaquina = (req.body.novaMaquina || '').trim();
@@ -239,6 +239,7 @@ router.post('/:id/transferir', async (req, res) => {
       return res.status(400).json({ error: 'Este papelcartão não está em uso (não há lote para transferir).' });
     }
 
+    const perdaKg = parseFloat(req.body.perdaKg) || 0;
     const maquinaAnterior = item.maquinaAtual || '-';
     item.maquinaAtual = novaMaquina;
     await item.save();
@@ -255,7 +256,8 @@ router.post('/:id/transferir', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
         usuario: req.body.usuario || '',
-        observacoes: req.body.observacoes || ''
+        observacoes: req.body.observacoes || '',
+        perdaKg
       }).save();
     } catch (e) {
       console.error('Falha ao gravar movimentação de papelcartão (TRANSFERENCIA):', e);
