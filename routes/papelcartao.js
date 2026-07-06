@@ -286,7 +286,7 @@ router.post('/:id/retorno', async (req, res) => {
 });
 
 // Transferência — move UM lote específico para outra máquina
-// body: { loteId, novaMaquina, usuario, observacoes, perdaKg }
+// body: { loteId, novaMaquina, usuario, observacoes, perdaKg, folhasPerdidas }
 router.post('/:id/transferir', async (req, res) => {
   try {
     const novaMaquina = (req.body.novaMaquina || '').trim();
@@ -302,15 +302,26 @@ router.post('/:id/transferir', async (req, res) => {
     if (!lote) return res.status(400).json({ error: 'Lote não encontrado neste papelcartão.' });
 
     const perdaKg = parseFloat(req.body.perdaKg) || 0;
+    const folhasPerdidas = parseInt(req.body.folhasPerdidas, 10) || 0;
+    if (folhasPerdidas < 0) return res.status(400).json({ error: 'Folhas perdidas inválidas' });
+    if (folhasPerdidas > (lote.quantidade || 0)) {
+      return res.status(400).json({
+        error: `Folhas perdidas (${folhasPerdidas}) maior que o lote (${lote.quantidade}).`
+      });
+    }
+
     const maquinaAnterior = lote.maquinaAtual || '-';
 
     if (maquinaAnterior === novaMaquina) {
       return res.status(400).json({ error: 'A máquina escolhida é a mesma atual do lote.' });
     }
 
+    // Subtrai as folhas perdidas do lote e muda de máquina
+    lote.quantidade = (lote.quantidade || 0) - folhasPerdidas;
     lote.maquinaAtual = novaMaquina;
 
-    // Recalcula maquinaAtual legado
+    // Recalcula os campos legados (soma e concat de máquinas)
+    item.quantidadeEmUso = item.lotesEmUso.reduce((s, l) => s + (parseInt(l.quantidade, 10) || 0), 0);
     const maqs = [...new Set(item.lotesEmUso.map(l => l.maquinaAtual).filter(Boolean))];
     item.maquinaAtual = maqs.join(', ');
 
@@ -328,7 +339,8 @@ router.post('/:id/transferir', async (req, res) => {
         tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
         usuario: req.body.usuario || '',
         observacoes: req.body.observacoes || '',
-        perdaKg
+        perdaKg,
+        filhasGeradas: folhasPerdidas // reaproveitando esse campo para "folhas perdidas na transferência"
       }).save();
     } catch (e) {
       console.error('Falha ao gravar movimentação (TRANSFERENCIA):', e);
