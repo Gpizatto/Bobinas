@@ -25,6 +25,7 @@ const etiquetaRoutes = require('./routes/etiqueta');
 const papelcartaoRoutes = require('./routes/papelcartao');
 const insumosRoutes = require('./routes/insumos');
 const produtosAcabadosRoutes = require('./routes/produtosAcabados');
+const folhasBobinaRoutes = require('./routes/folhasBobina');
 app.use('/', etiquetaRoutes);
 
 
@@ -35,6 +36,7 @@ app.use('/folhas', folhasRoutes);
 app.use('/papelcartao', papelcartaoRoutes);
 app.use('/insumos', insumosRoutes);
 app.use('/produtos-acabados', produtosAcabadosRoutes);
+app.use('/folhas-bobina', folhasBobinaRoutes);
 
 // Rota base
 app.get('/', (req, res) => {
