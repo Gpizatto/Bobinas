@@ -18,6 +18,7 @@ const MovimentacaoSchema = new mongoose.Schema({
   unidade: { type: String, default: 'kg' }, // 'kg' | 'folhas'
   tipoMaquina: { type: String, default: '' },
   usuario: String,
+  cliente: { type: String, default: '' },
   observacoes: String,
   // Campos extras para retorno de papelcartão
   perdaKg: { type: Number, default: 0 },
