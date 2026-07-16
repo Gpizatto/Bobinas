@@ -1,16 +1,17 @@
 const mongoose = require('mongoose');
 
-// Cada documento é UM lançamento (entrada ou saída) — modelo livro-razão.
-// O Total por código é calculado dinamicamente (soma de entradas - saídas).
+// Modelo estilo "Produtos Acabados": cada documento é UM insumo (código único),
+// com acumuladores de Entrada e Saída. O Total = totalEntradas - totalSaidas.
 const InsumoSchema = new mongoose.Schema({
-  data: { type: Date, default: Date.now },
-  codigo: { type: String, required: true },
+  codigo: { type: String, required: true, unique: true },
   fabricante: { type: String, default: '' },
   descricao: { type: String, default: '' },
-  funcionario: { type: String, default: '' },
-  setor: { type: String, default: '' },
-  entrada: { type: Number, default: 0 },
-  saida: { type: Number, default: 0 }
+  funcionario: { type: String, default: '' }, // opcional (referência inicial)
+  setor: { type: String, default: '' },       // opcional (referência inicial)
+  totalEntradas: { type: Number, default: 0 },
+  totalSaidas: { type: Number, default: 0 },
+  observacoes: { type: String, default: '' },
+  dataCadastro: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Insumo', InsumoSchema);
