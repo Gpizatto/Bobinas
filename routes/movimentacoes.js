@@ -4,6 +4,7 @@ const Movimentacao = require('../models/Movimentacao');
 const Bobina = require('../models/Bobina');
 const Papelcartao = require('../models/Papelcartao');
 const ProdutoAcabado = require('../models/ProdutoAcabado');
+const Insumo = require('../models/Insumo');
 
 // GET todas as movimentações
 router.get('/', async (req, res) => {
@@ -85,6 +86,19 @@ router.put('/:id', async (req, res) => {
           if (saldo < 0) return res.status(400).json({ error: `Saldo ficaria negativo (${saldo})` });
         }
         await prod.save();
+      } else if (tipoItem === 'insumo') {
+        const ins = await Insumo.findById(idItem);
+        if (!ins) return res.status(400).json({ error: 'Insumo referenciado não existe mais' });
+        if (mov.tipoMovimentacao === 'ENTRADA') {
+          ins.totalEntradas = (ins.totalEntradas || 0) + delta;
+          if (ins.totalEntradas < 0) return res.status(400).json({ error: 'Total de entradas ficaria negativo' });
+        } else if (mov.tipoMovimentacao === 'SAIDA') {
+          ins.totalSaidas = (ins.totalSaidas || 0) + delta;
+          if (ins.totalSaidas < 0) return res.status(400).json({ error: 'Total de saídas ficaria negativo' });
+          const saldo = (ins.totalEntradas || 0) - ins.totalSaidas;
+          if (saldo < 0) return res.status(400).json({ error: `Saldo ficaria negativo (${saldo})` });
+        }
+        await ins.save();
       }
     }
 
@@ -178,6 +192,20 @@ router.delete('/:id', async (req, res) => {
           }
         }
         await prod.save();
+      }
+    } else if (tipoItem === 'insumo') {
+      const ins = await Insumo.findById(idItem);
+      if (ins) {
+        if (mov.tipoMovimentacao === 'ENTRADA') {
+          ins.totalEntradas = (ins.totalEntradas || 0) - quantidade;
+          if (ins.totalEntradas < 0) return res.status(400).json({ error: 'Total de entradas ficaria negativo. Ajuste antes de excluir.' });
+          const saldo = ins.totalEntradas - (ins.totalSaidas || 0);
+          if (saldo < 0) return res.status(400).json({ error: `Saldo ficaria negativo (${saldo}).` });
+        } else if (mov.tipoMovimentacao === 'SAIDA') {
+          ins.totalSaidas = (ins.totalSaidas || 0) - quantidade;
+          if (ins.totalSaidas < 0) return res.status(400).json({ error: 'Total de saídas ficaria negativo. Ajuste antes de excluir.' });
+        }
+        await ins.save();
       }
     }
 
