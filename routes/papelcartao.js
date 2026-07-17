@@ -148,6 +148,7 @@ router.post('/:id/saida', async (req, res) => {
       quantidade: qtd,
       maquinaAtual: tipoMaquina,
       usuario: req.body.usuario || '',
+      cliente: req.body.cliente || '',
       observacoes: req.body.observacoes || '',
       dataSaida: new Date()
     });
@@ -162,6 +163,7 @@ router.post('/:id/saida', async (req, res) => {
       quantidade: qtd,
       tipoMaquina,
       usuario: req.body.usuario || '',
+      cliente: req.body.cliente || '',
       observacoes: req.body.observacoes || ''
     };
     await item.save();
@@ -178,6 +180,7 @@ router.post('/:id/saida', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina,
         usuario: req.body.usuario || '',
+        cliente: req.body.cliente || '',
         observacoes: req.body.observacoes || ''
       }).save();
     } catch (e) {
@@ -255,6 +258,7 @@ router.post('/:id/retorno', async (req, res) => {
       perdaKg,
       filhasGeradas: totalFilhas,
       usuario: req.body.usuario || '',
+      cliente: req.body.cliente || '',
       observacoes: req.body.observacoes || ''
     };
     await item.save();
@@ -271,6 +275,7 @@ router.post('/:id/retorno', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina: maquinaDoLote,
         usuario: req.body.usuario || '',
+        cliente: req.body.cliente || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         filhasGeradas: totalFilhas
@@ -338,6 +343,7 @@ router.post('/:id/transferir', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
         usuario: req.body.usuario || '',
+        cliente: req.body.cliente || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         filhasGeradas: folhasPerdidas // reaproveitando esse campo para "folhas perdidas na transferência"
