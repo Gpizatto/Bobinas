@@ -10,6 +10,7 @@ const InsumoSchema = new mongoose.Schema({
   setor: { type: String, default: '' },       // opcional (referência inicial)
   totalEntradas: { type: Number, default: 0 },
   totalSaidas: { type: Number, default: 0 },
+  unidade: { type: String, default: 'un' }, // unidade da última movimentação (referência visual)
   observacoes: { type: String, default: '' },
   dataCadastro: { type: Date, default: Date.now }
 });
