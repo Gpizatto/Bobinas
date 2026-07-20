@@ -109,6 +109,7 @@ router.put('/:id', async (req, res) => {
     if (req.body.cliente !== undefined) mov.cliente = req.body.cliente;
     if (req.body.observacoes !== undefined) mov.observacoes = req.body.observacoes;
     if (req.body.perdaKg !== undefined) mov.perdaKg = parseFloat(req.body.perdaKg) || 0;
+    if (req.body.perdaKgExtra !== undefined) mov.perdaKgExtra = parseFloat(req.body.perdaKgExtra) || 0;
     await mov.save();
 
     res.json(mov);
