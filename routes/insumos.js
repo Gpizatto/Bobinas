@@ -71,7 +71,10 @@ router.post('/:id/entrada', async (req, res) => {
     const item = await Insumo.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Insumo não encontrado' });
 
+    const unidade = (req.body.unidade || 'un').trim();
+
     item.totalEntradas = (item.totalEntradas || 0) + qtd;
+    item.unidade = unidade; // referência visual: última unidade usada
     await item.save();
 
     try {
@@ -82,7 +85,7 @@ router.post('/:id/entrada', async (req, res) => {
         descricaoItem: item.descricao || '',
         tipoMovimentacao: 'ENTRADA',
         quantidade: qtd,
-        unidade: 'un',
+        unidade,
         usuario: req.body.usuario || '',
         cliente: req.body.cliente || '',
         observacoes: req.body.observacoes || ''
@@ -110,7 +113,10 @@ router.post('/:id/saida', async (req, res) => {
       return res.status(400).json({ error: `Quantidade insuficiente. Saldo: ${saldo}` });
     }
 
+    const unidade = (req.body.unidade || 'un').trim();
+
     item.totalSaidas = (item.totalSaidas || 0) + qtd;
+    item.unidade = unidade; // referência visual: última unidade usada
     await item.save();
 
     try {
@@ -121,7 +127,7 @@ router.post('/:id/saida', async (req, res) => {
         descricaoItem: item.descricao || '',
         tipoMovimentacao: 'SAIDA',
         quantidade: qtd,
-        unidade: 'un',
+        unidade,
         usuario: req.body.usuario || '',
         cliente: req.body.cliente || '',
         observacoes: req.body.observacoes || ''
