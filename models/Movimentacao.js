@@ -22,6 +22,7 @@ const MovimentacaoSchema = new mongoose.Schema({
   observacoes: String,
   // Campos extras para retorno de papelcartão
   perdaKg: { type: Number, default: 0 },
+  perdaKgExtra: { type: Number, default: 0 }, // perda em kg complementar (papelcartão em transferências)
   filhasGeradas: { type: Number, default: 0 },
 
   data: {
