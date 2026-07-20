@@ -307,6 +307,7 @@ router.post('/:id/transferir', async (req, res) => {
     if (!lote) return res.status(400).json({ error: 'Lote não encontrado neste papelcartão.' });
 
     const perdaKg = parseFloat(req.body.perdaKg) || 0;
+    const perdaKgExtra = parseFloat(req.body.perdaKgExtra) || 0;
     const folhasPerdidas = parseInt(req.body.folhasPerdidas, 10) || 0;
     if (folhasPerdidas < 0) return res.status(400).json({ error: 'Folhas perdidas inválidas' });
     if (folhasPerdidas > (lote.quantidade || 0)) {
@@ -346,6 +347,7 @@ router.post('/:id/transferir', async (req, res) => {
         cliente: req.body.cliente || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
+        perdaKgExtra,
         filhasGeradas: folhasPerdidas // reaproveitando esse campo para "folhas perdidas na transferência"
       }).save();
     } catch (e) {
