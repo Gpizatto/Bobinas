@@ -19,6 +19,9 @@ async function proximoCodigo() {
 // Uso interno: cria uma Folha de Bobina (usado pela rota de retorno de bobinas)
 async function criarFolhaBobinaInterno(dados) {
   if (!dados.codigo) dados.codigo = await proximoCodigo();
+  if (dados.quantidadeGerada === undefined || dados.quantidadeGerada === null) {
+    dados.quantidadeGerada = dados.quantidade || 0;
+  }
   const nova = new FolhaBobina(dados);
   await nova.save();
   return nova;
@@ -48,6 +51,10 @@ router.post('/', async (req, res) => {
     const dados = { ...req.body };
     if (!dados.codigo || !dados.codigo.trim()) {
       dados.codigo = await proximoCodigo();
+    }
+    // Fixa a quantidade originalmente gerada (não muda com uso posterior)
+    if (dados.quantidadeGerada === undefined || dados.quantidadeGerada === null) {
+      dados.quantidadeGerada = dados.quantidade || 0;
     }
     const novo = new FolhaBobina(dados);
     await novo.save();
@@ -190,6 +197,7 @@ router.post('/:id/retorno', async (req, res) => {
         tipo: item.tipo,
         localizacao: item.localizacao,
         quantidade: qFilha,
+        quantidadeGerada: qFilha,
         formato: fmtFilha,
         gramatura: item.gramatura,
         status: 'DISPONÍVEL',
