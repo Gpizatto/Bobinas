@@ -14,6 +14,7 @@ const PapelcartaoSchema = new mongoose.Schema({
   tipo: { type: String, required: true },
   localizacao: { type: String, default: '' },
   quantidade: { type: Number, required: true, default: 0 },
+  quantidadeGerada: { type: Number, default: null }, // quantidade original gerada (fixa, não muda com uso)
   formato: { type: String, default: '' },
   gramatura: { type: Number, default: 0 },
   status: { type: String, default: 'DISPONÍVEL' },
