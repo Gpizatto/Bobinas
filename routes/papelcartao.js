@@ -84,6 +84,9 @@ router.post('/', async (req, res) => {
     if (!dados.codigo || !dados.codigo.trim()) {
       dados.codigo = await proximoCodigo();
     }
+    if (dados.quantidadeGerada === undefined || dados.quantidadeGerada === null) {
+      dados.quantidadeGerada = dados.quantidade || 0;
+    }
     const novo = new Papelcartao(dados);
     await novo.save();
     res.status(201).json(novo);
@@ -236,6 +239,7 @@ router.post('/:id/retorno', async (req, res) => {
         tipo: item.tipo,
         localizacao: item.localizacao,
         quantidade: qFilha,
+        quantidadeGerada: qFilha,
         formato: fmtFilha,
         gramatura: item.gramatura,
         status: 'DISPONÍVEL',
