@@ -296,7 +296,7 @@ router.post('/:id/transferir', async (req, res) => {
         tipoMovimentacao: 'TRANSFERENCIA',
         quantidade: lote.quantidade || 0,
         unidade: 'folhas',
-        tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
+        tipoMaquina: novaMaquina,
         usuario: req.body.usuario || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
