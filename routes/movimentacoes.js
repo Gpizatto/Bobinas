@@ -107,6 +107,7 @@ router.put('/:id', async (req, res) => {
     if (req.body.tipoMaquina !== undefined) mov.tipoMaquina = req.body.tipoMaquina;
     if (req.body.usuario !== undefined) mov.usuario = req.body.usuario;
     if (req.body.cliente !== undefined) mov.cliente = req.body.cliente;
+    if (req.body.servico !== undefined) mov.servico = req.body.servico;
     if (req.body.observacoes !== undefined) mov.observacoes = req.body.observacoes;
     if (req.body.perdaKg !== undefined) mov.perdaKg = parseFloat(req.body.perdaKg) || 0;
     if (req.body.perdaKgExtra !== undefined) mov.perdaKgExtra = parseFloat(req.body.perdaKgExtra) || 0;
