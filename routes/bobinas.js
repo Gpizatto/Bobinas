@@ -90,7 +90,7 @@ router.post('/:id/transferir', async (req, res) => {
         tipoMovimentacao: 'TRANSFERENCIA',
         quantidade: bobina.peso || 0,
         unidade: 'kg',
-        tipoMaquina: `${maquinaAnterior} → ${novaMaquina}`,
+        tipoMaquina: novaMaquina,
         usuario: req.body.usuario || '',
         observacoes: req.body.observacoes || ''
       }).save();
