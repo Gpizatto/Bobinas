@@ -19,6 +19,7 @@ const MovimentacaoSchema = new mongoose.Schema({
   tipoMaquina: { type: String, default: '' },
   usuario: String,
   cliente: { type: String, default: '' },
+  servico: { type: String, default: '' },
   observacoes: String,
   // Campos extras para retorno de papelcartão
   perdaKg: { type: Number, default: 0 },
