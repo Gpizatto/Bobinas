@@ -13,9 +13,28 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Gera o próximo código sequencial para bobinas produzidas por máquina (BOB-0001, BOB-0002...)
+async function proximoCodigoMaquina() {
+  const ultima = await Bobina.findOne({ produzidaPorMaquina: true, codigoQR: /^BOB-\d+$/ })
+    .sort({ codigoQR: -1 })
+    .select('codigoQR')
+    .lean();
+  let n = 0;
+  if (ultima && ultima.codigoQR) {
+    const m = ultima.codigoQR.match(/^BOB-(\d+)$/);
+    if (m) n = parseInt(m[1], 10);
+  }
+  return `BOB-${String(n + 1).padStart(4, '0')}`;
+}
+
 // ✅ POST criar nova bobina
 router.post('/', async (req, res) => {
   try {
+    // Bobinas geradas nas máquinas (Laminadora/Flexo) recebem código sequencial
+    // BOB-0001, BOB-0002... para facilitar rastreio, em vez de um valor "aleatório".
+    if (req.body.produzidaPorMaquina === true && (!req.body.codigoQR || req.body.codigoQR.trim() === "")) {
+      req.body.codigoQR = await proximoCodigoMaquina();
+    }
     // Garante que sempre terá um codigoQR
     if (!req.body.codigoQR || req.body.codigoQR.trim() === "") {
       req.body.codigoQR = `BOBINA-${Date.now()}`;
