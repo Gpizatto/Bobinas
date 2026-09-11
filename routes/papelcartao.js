@@ -152,6 +152,7 @@ router.post('/:id/saida', async (req, res) => {
       maquinaAtual: tipoMaquina,
       usuario: req.body.usuario || '',
       cliente: req.body.cliente || '',
+      servico: req.body.servico || '',
       observacoes: req.body.observacoes || '',
       dataSaida: new Date()
     });
@@ -167,6 +168,7 @@ router.post('/:id/saida', async (req, res) => {
       tipoMaquina,
       usuario: req.body.usuario || '',
       cliente: req.body.cliente || '',
+      servico: req.body.servico || '',
       observacoes: req.body.observacoes || ''
     };
     await item.save();
@@ -184,6 +186,7 @@ router.post('/:id/saida', async (req, res) => {
         tipoMaquina,
         usuario: req.body.usuario || '',
         cliente: req.body.cliente || '',
+        servico: req.body.servico || '',
         observacoes: req.body.observacoes || ''
       }).save();
     } catch (e) {
@@ -263,6 +266,7 @@ router.post('/:id/retorno', async (req, res) => {
       filhasGeradas: totalFilhas,
       usuario: req.body.usuario || '',
       cliente: req.body.cliente || '',
+      servico: req.body.servico || '',
       observacoes: req.body.observacoes || ''
     };
     await item.save();
@@ -280,6 +284,7 @@ router.post('/:id/retorno', async (req, res) => {
         tipoMaquina: maquinaDoLote,
         usuario: req.body.usuario || '',
         cliente: req.body.cliente || '',
+        servico: req.body.servico || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         filhasGeradas: totalFilhas
@@ -349,6 +354,7 @@ router.post('/:id/transferir', async (req, res) => {
         tipoMaquina: novaMaquina,
         usuario: req.body.usuario || '',
         cliente: req.body.cliente || '',
+        servico: req.body.servico || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         perdaKgExtra,
