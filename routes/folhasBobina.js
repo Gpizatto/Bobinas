@@ -147,6 +147,8 @@ router.post('/:id/saida', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina,
         usuario: req.body.usuario || '',
+        cliente: req.body.cliente || '',
+        servico: req.body.servico || '',
         observacoes: req.body.observacoes || ''
       }).save();
     } catch (e) {
@@ -235,6 +237,8 @@ router.post('/:id/retorno', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina: maquinaDoLote,
         usuario: req.body.usuario || '',
+        cliente: req.body.cliente || '',
+        servico: req.body.servico || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         filhasGeradas: totalFilhas
@@ -298,6 +302,8 @@ router.post('/:id/transferir', async (req, res) => {
         unidade: 'folhas',
         tipoMaquina: novaMaquina,
         usuario: req.body.usuario || '',
+        cliente: req.body.cliente || '',
+        servico: req.body.servico || '',
         observacoes: req.body.observacoes || '',
         perdaKg,
         filhasGeradas: folhasPerdidas
