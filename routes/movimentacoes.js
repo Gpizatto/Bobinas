@@ -9,7 +9,29 @@ const Insumo = require('../models/Insumo');
 // GET todas as movimentações
 router.get('/', async (req, res) => {
   try {
-    const movimentacoes = await Movimentacao.find().sort({ data: -1 });
+    const movimentacoes = await Movimentacao.find().sort({ data: -1 }).lean();
+
+    // Herda cliente/serviço da SAÍDA de origem quando a movimentação não os tem
+    // (retornos, transferências e registros antigos), para tudo aparecer na tabela/relatório/Excel.
+    const chave = (m) => String(m.idItem || m.idBobina || '');
+    const porId = new Map(movimentacoes.map((m) => [String(m._id), m]));
+    const asc = [...movimentacoes].sort((a, b) => new Date(a.data) - new Date(b.data));
+    const ultimaSaida = new Map();
+    for (const m of asc) {
+      const t = String(m.tipoMovimentacao || '').toUpperCase();
+      const k = chave(m);
+      if (t === 'SAIDA' || t === 'SAÍDA') {
+        ultimaSaida.set(k, m);
+        continue;
+      }
+      if (t !== 'RETORNO' && t !== 'TRANSFERENCIA' && t !== 'TRANSFERÊNCIA') continue;
+      if (m.cliente && m.servico) continue;
+      let origem = m.idMovimentoOrigem ? porId.get(String(m.idMovimentoOrigem)) : null;
+      if (!origem) origem = ultimaSaida.get(k);
+      if (!origem) continue;
+      if (!m.cliente && origem.cliente) m.cliente = origem.cliente;
+      if (!m.servico && origem.servico) m.servico = origem.servico;
+    }
     res.json(movimentacoes);
   } catch (err) {
     res.status(500).json({ error: err.message });
